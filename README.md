@@ -1,0 +1,33 @@
+# swift-unicode-cldr
+
+Use this package when you show a date, a number or a count to a person in their own language: month and weekday names, the four date styles, decimal and grouping symbols, and the plural category a message needs. Locales are the Institute's own `Locale` from swift-locale-standard or a `BCP47.LanguageTag`; the data is Unicode CLDR.
+
+```swift
+let date = try ISO_8601.CalendarDate(year: 2026, month: 11, day: 10)
+date.formatted(.long, in: .nl)              // "10 november 2026"
+CLDR.months(.wide, in: .nl)[.march]         // "maart"
+CLDR.plural(3, in: .nl)                     // .other
+1234.5.formatted(.decimal, in: .nl)         // "1.234,5"
+```
+
+The data is generated from CLDR 49.0.0, the `cldr-49.0.0-json-full.zip` asset of the `49.0.0` release of `unicode-org/cldr-json`. Every locale whose effective coverage in `cldr-core/coverageLevels.json` is `modern` is included, 421 in all, root (`und`) among them. For each one the generator read the Gregorian months, days, eras and date formats from `cldr-dates-full`, the symbols, decimal pattern and minimum grouping digits of its default numbering system from `cldr-numbers-full`, and the digits of that system from `numberingSystems.json`. Plural rules and their samples come from `plurals.json` and `ordinals.json`; resolution uses `aliases.json`, `likelySubtags.json` and `parentLocales.json`. Equal tables are stored once and every locale points at them. The generator's Swift, formatted with the Institute's swift-format configuration, is what sits under `Sources/Unicode CLDR/Generated` with the plural samples under `Tests/Unicode CLDR Tests/Generated`.
+
+## Laws
+
+- `CLDR.version` is `"49.0.0"`, and `CLDR.identifiers` lists the 421 locales at CLDR's modern coverage level, root included.
+- A locale resolves along CLDR's inheritance chain. A deprecated or legacy language code is replaced (`iw` by `he`, `tl` by `fil`). A missing script is taken from the likely subtags of the language and region, and the language's default script is dropped, so `zh-TW` reads as `zh-Hant`, `sr-ME` as `sr-Latn-ME` and `nl-Latn-NL` as `nl`. Then each parent from `parentLocales.json` is tried, or the last subtag is removed, until a covered locale is found. Extensions and private use subtags are ignored.
+- A language outside modern coverage resolves to root and gets root's data: `CLDR.months(.wide, in: fy)[.march]` is `"M03"`.
+- A `Locale` and the tag it writes resolve alike. Where both have a member of the same name, `.nl` means the `Locale`.
+- Every locale names twelve months and seven days in every width and in both the format and the stand-alone context, and its data equals the data of the locale it resolves to.
+- Dates use the Gregorian calendar only. A date pattern takes the era (`G`), year (`y`), month (`M`, `L`), day (`d`) and weekday (`E`, and `c` from three letters) fields of LDML; any other field, and a width the field doesn't have, is refused. Text between apostrophes is literal and two apostrophes are one.
+- A year before 1 is counted backwards in the era before it: year 0 is 1 BC.
+- Dates and numbers are written in the digits of the locale's default numbering system, such as Bengali digits for `bn`.
+- Every generated date pattern, decimal pattern and plural rule equals the parse of the CLDR text it was generated from.
+- `.decimal` formats with the locale's standard decimal pattern: at most three fraction digits, rounded half to even, grouped by the pattern's primary and secondary sizes. A number is grouped only when its integer has at least the primary size plus the locale's minimum grouping digits, so Spanish writes `1234` and `12.345`.
+- A `CLDR.Number.Format` can set the minimum integer digits, minimum and maximum fraction digits, or minimum and maximum significant digits; significant digits win when set. Its grouping is `auto`, `always`, `min2` or `never`, and its sign is `auto`, `always`, `exceptZero`, `negative` or `never`, as in MessageFormat's `:number`.
+- A `Double` is formatted from its shortest round-trip form, so `0.1` is `0.1`. Negative zero shows its sign, infinity is the locale's infinity symbol with the sign, and NaN is the locale's NaN symbol.
+- A decimal pattern accepts quoted text, `-` and `+` in its affixes, and a negative subpattern. Percent, per mille, currency, exponent, padding and significant digit patterns are refused.
+- `CLDR.Number.Decimal` reads text by MessageFormat's number literal: an optional `-`, an integer without leading zeros, an optional fraction and an optional exponent. It keeps its trailing fraction zeros, so `1.0` and `1` differ.
+- Plural categories follow CLDR's rules, cardinal and ordinal. Every `@integer` and `@decimal` sample in CLDR selects its own category: 12,499 cardinal and 2,732 ordinal values.
+- Plural operands follow TR35: `n` and `i` are the absolute integer part, `v` and `f` the visible fraction digits and their value, `w` and `t` the same without trailing zeros, and `c` (or `e`) the compact exponent, written `1.2c3`. An integer part beyond seventeen digits keeps its low seventeen digits and stays larger than any shorter number.
+- A plural rule is read in CLDR's present syntax, relations joined by `and` and `or` that compare with `=` or `!=` to values and ranges. The older `is`, `in` and `within` are refused.
