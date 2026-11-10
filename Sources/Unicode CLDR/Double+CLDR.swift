@@ -12,13 +12,26 @@ extension Double {
         formatted(format, CLDR.Resolution(tag).record.number)
     }
 
+    public func formattedParts(_ format: CLDR.Number.Format, in locale: Locale) -> [CLDR.Number.Part] {
+        formattedParts(format, CLDR.Resolution(locale).record.number)
+    }
+
+    @_disfavoredOverload
+    public func formattedParts(_ format: CLDR.Number.Format, in tag: BCP47.LanguageTag) -> [CLDR.Number.Part] {
+        formattedParts(format, CLDR.Resolution(tag).record.number)
+    }
+
     func formatted(_ format: CLDR.Number.Format, _ data: CLDR.Number.Data) -> String {
+        formattedParts(format, data).map(\.text).joined()
+    }
+
+    func formattedParts(_ format: CLDR.Number.Format, _ data: CLDR.Number.Data) -> [CLDR.Number.Part] {
         guard let decimal = CLDR.Number.Decimal(self) else {
             if isNaN {
-                return data.symbols.nan
+                return [.nan(data.symbols.nan)]
             }
-            return format.signed(data.symbols.infinity, negative: sign == .minus, zero: false, data)
+            return format.signed([.infinity(data.symbols.infinity)], negative: sign == .minus, zero: false, data)
         }
-        return decimal.formatted(format, data)
+        return decimal.formattedParts(format, data)
     }
 }

@@ -11,6 +11,8 @@ extension CLDR {
         let dates: Int
 
         let numbers: Int
+
+        let direction: CLDR.Direction
     }
 }
 

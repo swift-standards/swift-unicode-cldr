@@ -62,6 +62,21 @@ extension `CLDR Tests`.Test.Unit {
     }
 }
 
+extension `CLDR Tests`.Test.Unit {
+
+    @Test
+    func `the character order of a locale is its direction`() throws {
+        #expect(CLDR.direction(in: .en) == .leftToRight)
+        #expect(CLDR.direction(in: .ar) == .rightToLeft)
+        #expect(CLDR.direction(in: try BCP47.LanguageTag("he")) == .rightToLeft)
+        #expect(CLDR.direction(in: try BCP47.LanguageTag("fa-AF")) == .rightToLeft)
+        #expect(CLDR.direction(in: try BCP47.LanguageTag("kk-Arab")) == .rightToLeft)
+        #expect(CLDR.direction(in: try BCP47.LanguageTag("kk")) == .leftToRight)
+        let rightToLeft = try CLDR.identifiers.filter { CLDR.direction(in: try BCP47.LanguageTag($0)) == .rightToLeft }
+        #expect(rightToLeft.count == 38)
+    }
+}
+
 extension `CLDR Tests`.Test.`Edge Case` {
 
     @Test

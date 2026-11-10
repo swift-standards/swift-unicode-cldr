@@ -108,6 +108,20 @@ extension `CLDR.Number Tests`.Test.Unit {
     }
 
     @Test
+    func `parts name each piece of the formatted number`() throws {
+        #expect(
+            try CLDR.Number.Decimal("-1234.5").formattedParts(.decimal, in: .en) == [
+                .minusSign("-"), .integer("1"), .group(","), .integer("234"), .decimal("."), .fraction("5"),
+            ]
+        )
+        #expect(42.0.formattedParts(.decimal, in: .en) == [.integer("42")])
+        #expect((-Double.infinity).formattedParts(.decimal, in: .en) == [.minusSign("-"), .infinity("∞")])
+        #expect(Double.nan.formattedParts(.decimal, in: .en) == [.nan("NaN")])
+        let parts = try CLDR.Number.Decimal("-1234.5").formattedParts(.decimal, in: .nl)
+        #expect(parts.map(\.text).joined() == (try CLDR.Number.Decimal("-1234.5")).formatted(.decimal, in: .nl))
+    }
+
+    @Test
     func `the sign follows the sign display`() {
         #expect((-5).formatted(.decimal, in: .en) == "-5")
         #expect(5.formatted(CLDR.Number.Format(sign: .always), in: .en) == "+5")

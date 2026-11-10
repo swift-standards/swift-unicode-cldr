@@ -36,7 +36,7 @@ extension CLDR.Number.Format {
         return result.trimmed(toFractionDigits: 0)
     }
 
-    func string(_ decimal: CLDR.Number.Decimal, _ data: CLDR.Number.Data) -> String {
+    func parts(_ decimal: CLDR.Number.Decimal, _ data: CLDR.Number.Data) -> [CLDR.Number.Part] {
         let pattern = data.pattern
         var integer = decimal.integerDigits.map { Character(String($0)) }
         let minimumInteger = Int(clamping: minimumIntegerDigits ?? pattern.minimumIntegerDigits)
@@ -46,17 +46,24 @@ extension CLDR.Number.Format {
         if integer.isEmpty, decimal.fractionDigits.isEmpty {
             integer = ["0"]
         }
-        var body = group(data.localized(String(integer)), data)
+        var body: [CLDR.Number.Part] = []
+        for (index, group) in groups(data.localized(String(integer)), data).enumerated() {
+            if index > 0 {
+                body.append(.group(data.symbols.group))
+            }
+            body.append(.integer(group))
+        }
         let fraction = decimal.fractionDigits.map(String.init).joined()
         if !fraction.isEmpty {
-            body += data.symbols.decimal + data.localized(fraction)
+            body.append(.decimal(data.symbols.decimal))
+            body.append(.fraction(data.localized(fraction)))
         }
         return signed(body, negative: decimal.isNegative, zero: decimal.isZero, data)
     }
 
-    func group(_ integer: String, _ data: CLDR.Number.Data) -> String {
+    func groups(_ integer: String, _ data: CLDR.Number.Data) -> [String] {
         guard let grouping = data.pattern.grouping else {
-            return integer
+            return [integer]
         }
         let minimum: Int? =
             switch self.grouping {
@@ -69,7 +76,7 @@ extension CLDR.Number.Format {
         let primary = Int(clamping: grouping.primary)
         let secondary = Int(clamping: grouping.secondary)
         guard let minimum, digits.count >= primary + minimum else {
-            return integer
+            return [integer]
         }
         var groups: [String] = [String(digits.suffix(primary))]
         var end = digits.count - primary
@@ -78,10 +85,10 @@ extension CLDR.Number.Format {
             groups.insert(String(digits[start..<end]), at: 0)
             end = start
         }
-        return groups.joined(separator: data.symbols.group)
+        return groups
     }
 
-    func signed(_ body: String, negative: Bool, zero: Bool, _ data: CLDR.Number.Data) -> String {
+    func signed(_ body: [CLDR.Number.Part], negative: Bool, zero: Bool, _ data: CLDR.Number.Data) -> [CLDR.Number.Part] {
         let pattern = data.pattern
         let shown: CLDR.Number.Pattern.Affix? =
             switch sign {
@@ -114,13 +121,13 @@ extension CLDR.Number.Format {
         return render(affixes.prefix, data) + body + render(affixes.suffix, data)
     }
 
-    func render(_ pieces: [CLDR.Number.Pattern.Affix], _ data: CLDR.Number.Data) -> String {
+    func render(_ pieces: [CLDR.Number.Pattern.Affix], _ data: CLDR.Number.Data) -> [CLDR.Number.Part] {
         pieces.map { piece in
             switch piece {
-            case .text(let text): text
-            case .minusSign: data.symbols.minusSign
-            case .plusSign: data.symbols.plusSign
+            case .text(let text): .literal(text)
+            case .minusSign: .minusSign(data.symbols.minusSign)
+            case .plusSign: .plusSign(data.symbols.plusSign)
             }
-        }.joined()
+        }
     }
 }

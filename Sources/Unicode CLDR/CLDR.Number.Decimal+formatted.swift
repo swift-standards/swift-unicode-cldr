@@ -21,7 +21,20 @@ extension CLDR.Number.Decimal {
         formatted(format, CLDR.Resolution(tag).record.number)
     }
 
+    public func formattedParts(_ format: CLDR.Number.Format, in locale: Locale) -> [CLDR.Number.Part] {
+        formattedParts(format, CLDR.Resolution(locale).record.number)
+    }
+
+    @_disfavoredOverload
+    public func formattedParts(_ format: CLDR.Number.Format, in tag: BCP47.LanguageTag) -> [CLDR.Number.Part] {
+        formattedParts(format, CLDR.Resolution(tag).record.number)
+    }
+
     func formatted(_ format: CLDR.Number.Format, _ data: CLDR.Number.Data) -> String {
-        format.string(format.rounded(self, data.pattern), data)
+        formattedParts(format, data).map(\.text).joined()
+    }
+
+    func formattedParts(_ format: CLDR.Number.Format, _ data: CLDR.Number.Data) -> [CLDR.Number.Part] {
+        format.parts(format.rounded(self, data.pattern), data)
     }
 }
