@@ -157,6 +157,31 @@ extension `CLDR.Number Tests`.Test.Unit {
     }
 }
 
+extension `CLDR.Number Tests`.Test.Unit {
+
+    @Test(arguments: [
+        ("41", "1", "42"),
+        ("52", "-10", "42"),
+        ("1.5", "1", "2.5"),
+        ("-0.25", "1", "0.75"),
+        ("0.5", "-0.5", "0.0"),
+        ("-1.5", "-1", "-2.5"),
+        ("999.99", "0.01", "1000.00"),
+        ("1e3", "1", "1001"),
+    ])
+    func `decimals add exactly and keep the longer fraction`(left: String, right: String, sum: String) throws {
+        let result = try CLDR.Number.Decimal(left).adding(try CLDR.Number.Decimal(right))
+        #expect(result.description == sum)
+        #expect(!(result.isZero && result.isNegative))
+    }
+
+    @Test
+    func `an integer adds to a decimal`() throws {
+        #expect(try CLDR.Number.Decimal("41.5").adding(1).description == "42.5")
+        #expect(try CLDR.Number.Decimal("1").adding(-3).description == "-2")
+    }
+}
+
 extension `CLDR.Number Tests`.Test.`Edge Case` {
 
     @Test

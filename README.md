@@ -21,6 +21,7 @@ Use this package when you show a date, a number or a count to a person in their 
 - A `Double` is formatted from its shortest round-trip form, so `0.1` is `0.1`. Negative zero shows its sign, infinity is the locale's infinity symbol with the sign, and NaN is the locale's NaN symbol.
 - A decimal pattern accepts quoted text, `-` and `+` in its affixes, and a negative subpattern. Percent, per mille, currency, exponent, padding and significant digit patterns are refused.
 - `CLDR.Number.Decimal` reads text by MessageFormat's number literal: an optional `-`, an integer without leading zeros, an optional fraction and an optional exponent. It keeps its trailing fraction zeros, so `1.0` and `1` differ.
+- `CLDR.Number.Decimal.adding(_:)` adds exactly, with as many fraction digits as the longer of the two, and a zero sum is never negative.
 - Plural categories follow CLDR's rules, cardinal and ordinal. Every `@integer` and `@decimal` sample in CLDR selects its own category: 12,499 cardinal and 2,732 ordinal values.
 - Plural operands follow TR35: `n` and `i` are the absolute integer part, `v` and `f` the visible fraction digits and their value, `w` and `t` the same without trailing zeros, and `c` (or `e`) the compact exponent, written `1.2c3`. An integer part beyond seventeen digits keeps its low seventeen digits and stays larger than any shorter number.
 - A plural rule is read in CLDR's present syntax, relations joined by `and` and `or` that compare with `=` or `!=` to values and ranges. The older `is`, `in` and `within` are refused.
