@@ -18,6 +18,14 @@ extension CLDR.Number {
 
         public var sign: Sign
 
+        public var rounding: Rounding
+
+        public var increment: Cardinal
+
+        public var priority: Priority
+
+        public var trailingZeros: TrailingZeros
+
         public init(
             minimumIntegerDigits: Cardinal? = nil,
             minimumFractionDigits: Cardinal? = nil,
@@ -25,7 +33,11 @@ extension CLDR.Number {
             minimumSignificantDigits: Cardinal? = nil,
             maximumSignificantDigits: Cardinal? = nil,
             grouping: Grouping = .auto,
-            sign: Sign = .auto
+            sign: Sign = .auto,
+            rounding: Rounding = .halfEven,
+            increment: Cardinal = 1,
+            priority: Priority = .auto,
+            trailingZeros: TrailingZeros = .auto
         ) {
             self.minimumIntegerDigits = minimumIntegerDigits
             self.minimumFractionDigits = minimumFractionDigits
@@ -34,6 +46,10 @@ extension CLDR.Number {
             self.maximumSignificantDigits = maximumSignificantDigits
             self.grouping = grouping
             self.sign = sign
+            self.rounding = rounding
+            self.increment = increment
+            self.priority = priority
+            self.trailingZeros = trailingZeros
         }
     }
 }

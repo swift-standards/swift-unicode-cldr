@@ -55,6 +55,58 @@ extension `CLDR.Number Tests`.Test.Unit {
         #expect(7.formatted(CLDR.Number.Format(minimumIntegerDigits: 3), in: .en) == "007")
     }
 
+    @Test(arguments: [
+        (CLDR.Number.Format.Rounding.ceil, "3", "-2"),
+        (.floor, "2", "-3"),
+        (.expand, "3", "-3"),
+        (.trunc, "2", "-2"),
+        (.halfCeil, "3", "-2"),
+        (.halfFloor, "2", "-3"),
+        (.halfExpand, "3", "-3"),
+        (.halfTrunc, "2", "-2"),
+        (.halfEven, "2", "-2"),
+    ])
+    func `rounding modes decide a tie and a remainder`(rounding: CLDR.Number.Format.Rounding, positive: String, negative: String) throws {
+        let format = CLDR.Number.Format(maximumFractionDigits: 0, rounding: rounding)
+        #expect(try CLDR.Number.Decimal("2.5").formatted(format, in: .en) == positive)
+        #expect(try CLDR.Number.Decimal("-2.5").formatted(format, in: .en) == negative)
+    }
+
+    @Test
+    func `directed modes round any remainder`() throws {
+        #expect(try CLDR.Number.Decimal("2.01").formatted(CLDR.Number.Format(maximumFractionDigits: 0, rounding: .ceil), in: .en) == "3")
+        #expect(try CLDR.Number.Decimal("2.99").formatted(CLDR.Number.Format(maximumFractionDigits: 0, rounding: .trunc), in: .en) == "2")
+        #expect(try CLDR.Number.Decimal("2.51").formatted(CLDR.Number.Format(maximumFractionDigits: 0, rounding: .halfTrunc), in: .en) == "3")
+    }
+
+    @Test
+    func `an increment rounds to its multiples at the last fraction digit`() throws {
+        let fives = CLDR.Number.Format(minimumFractionDigits: 2, maximumFractionDigits: 2, rounding: .halfExpand, increment: 5)
+        #expect(try CLDR.Number.Decimal("1.23").formatted(fives, in: .en) == "1.25")
+        #expect(try CLDR.Number.Decimal("1.22").formatted(fives, in: .en) == "1.20")
+        #expect(try CLDR.Number.Decimal("1.98").formatted(fives, in: .en) == "2.00")
+        let quarters = CLDR.Number.Format(minimumFractionDigits: 2, maximumFractionDigits: 2, rounding: .halfEven, increment: 25)
+        #expect(try CLDR.Number.Decimal("1.375").formatted(quarters, in: .en) == "1.50")
+        #expect(try CLDR.Number.Decimal("1.125").formatted(quarters, in: .en) == "1.00")
+    }
+
+    @Test
+    func `rounding priority picks the more or the less precise result`() throws {
+        let value = try CLDR.Number.Decimal("1.23456")
+        let more = CLDR.Number.Format(maximumFractionDigits: 3, maximumSignificantDigits: 2, priority: .morePrecision)
+        let less = CLDR.Number.Format(maximumFractionDigits: 3, maximumSignificantDigits: 2, priority: .lessPrecision)
+        #expect(value.formatted(more, in: .en) == "1.235")
+        #expect(value.formatted(less, in: .en) == "1.2")
+        #expect(value.formatted(CLDR.Number.Format(maximumFractionDigits: 3, maximumSignificantDigits: 2), in: .en) == "1.2")
+    }
+
+    @Test
+    func `trailing zeros of an integer can be stripped`() {
+        let format = CLDR.Number.Format(minimumFractionDigits: 2, trailingZeros: .stripIfInteger)
+        #expect(1.formatted(format, in: .en) == "1")
+        #expect(1.5.formatted(format, in: .en) == "1.50")
+    }
+
     @Test
     func `the sign follows the sign display`() {
         #expect((-5).formatted(.decimal, in: .en) == "-5")

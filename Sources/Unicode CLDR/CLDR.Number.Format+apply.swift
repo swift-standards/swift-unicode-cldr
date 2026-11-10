@@ -3,22 +3,37 @@ import Cardinal
 extension CLDR.Number.Format {
 
     func rounded(_ decimal: CLDR.Number.Decimal, _ pattern: CLDR.Number.Pattern) -> CLDR.Number.Decimal {
-        if minimumSignificantDigits != nil || maximumSignificantDigits != nil {
-            let minimum = max(1, Int(clamping: minimumSignificantDigits ?? 1))
-            let maximum = max(minimum, Int(clamping: maximumSignificantDigits ?? 21))
-            return
-                decimal
-                .rounded(significantDigits: maximum)
-                .trimmed(toSignificantDigits: minimum)
-                .padded(toSignificantDigits: minimum)
-        }
-        let minimum = Int(clamping: minimumFractionDigits ?? pattern.minimumFractionDigits)
-        let maximum = max(minimum, Int(clamping: maximumFractionDigits ?? pattern.maximumFractionDigits))
-        return
+        let significant = minimumSignificantDigits != nil || maximumSignificantDigits != nil
+        let minimumSignificant = max(1, Int(clamping: minimumSignificantDigits ?? 1))
+        let maximumSignificant = max(minimumSignificant, Int(clamping: maximumSignificantDigits ?? 21))
+        let minimumFraction = Int(clamping: minimumFractionDigits ?? pattern.minimumFractionDigits)
+        let maximumFraction = max(minimumFraction, Int(clamping: maximumFractionDigits ?? pattern.maximumFractionDigits))
+        let bySignificance = {
             decimal
-            .rounded(fractionDigits: maximum)
-            .trimmed(toFractionDigits: minimum)
-            .padded(toFractionDigits: minimum)
+                .rounded(significantDigits: maximumSignificant, rounding)
+                .trimmed(toSignificantDigits: minimumSignificant)
+                .padded(toSignificantDigits: minimumSignificant)
+        }
+        let byFraction = {
+            decimal
+                .rounded(fractionDigits: maximumFraction, increment: Int(clamping: increment), rounding)
+                .trimmed(toFractionDigits: minimumFraction)
+                .padded(toFractionDigits: minimumFraction)
+        }
+        let result: CLDR.Number.Decimal
+        switch priority {
+        case .auto:
+            result = significant ? bySignificance() : byFraction()
+
+        case .morePrecision, .lessPrecision:
+            let significantPosition = maximumSignificant - decimal.point
+            let more = significantPosition >= maximumFraction
+            result = (priority == .morePrecision) == more ? bySignificance() : byFraction()
+        }
+        guard trailingZeros == .stripIfInteger, result.fractionDigits.allSatisfy({ $0 == 0 }) else {
+            return result
+        }
+        return result.trimmed(toFractionDigits: 0)
     }
 
     func string(_ decimal: CLDR.Number.Decimal, _ data: CLDR.Number.Data) -> String {

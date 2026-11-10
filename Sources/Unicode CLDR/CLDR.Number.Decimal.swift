@@ -152,48 +152,83 @@ extension CLDR.Number.Decimal {
 
 extension CLDR.Number.Decimal {
 
-    func rounded(fractionDigits count: Int) -> Self {
-        rounded(at: point + count)
+    func rounded(fractionDigits count: Int, increment: Int = 1, _ mode: CLDR.Number.Format.Rounding) -> Self {
+        let step = max(1, increment)
+        let cut = point + count
+        let integer: [UInt8] = cut <= 0 ? [] : (0..<cut).map { $0 < digits.count ? digits[$0] : 0 }
+        let discarded: [UInt8] =
+            cut >= digits.count ? [] : Array(repeating: 0, count: max(0, -cut)) + digits[max(cut, 0)...]
+        var quotient: [UInt8] = []
+        var remainder = 0
+        for digit in integer {
+            remainder = remainder * 10 + Int(digit)
+            quotient.append(UInt8(remainder / step))
+            remainder %= step
+        }
+        let fractionNonzero = discarded.contains { $0 != 0 }
+        guard remainder != 0 || fractionNonzero else {
+            return Self(negative: isNegative, digits: integer, point: integer.count - count)
+        }
+        let doubled = 2 * remainder + ((discarded.first ?? 0) >= 5 ? 1 : 0)
+        let beyondHalf = discarded.dropFirst().contains { $0 != 0 } || (discarded.first.map { $0 != 0 && $0 != 5 } ?? false)
+        let comparison: Int = doubled > step || (doubled == step && beyondHalf) ? 1 : doubled == step ? 0 : -1
+        let odd = (quotient.last ?? 0) % 2 == 1
+        let away: Bool
+        switch mode {
+        case .ceil: away = !isNegative
+        case .floor: away = isNegative
+        case .expand: away = true
+        case .trunc: away = false
+        case .halfCeil: away = comparison > 0 || (comparison == 0 && !isNegative)
+        case .halfFloor: away = comparison > 0 || (comparison == 0 && isNegative)
+        case .halfExpand: away = comparison >= 0
+        case .halfTrunc: away = comparison > 0
+        case .halfEven: away = comparison > 0 || (comparison == 0 && odd)
+        }
+        var result = Self.subtracting(remainder, from: integer)
+        if away {
+            result = Self.adding(step, to: result)
+        }
+        return Self(negative: isNegative, digits: result, point: result.count - count)
     }
 
-    func rounded(significantDigits count: Int) -> Self {
+    func rounded(significantDigits count: Int, _ mode: CLDR.Number.Format.Rounding) -> Self {
         guard !digits.isEmpty else {
             return self
         }
-        return rounded(at: count)
+        return rounded(fractionDigits: count - point, mode)
     }
 
-    func rounded(at cut: Int) -> Self {
-        guard cut < digits.count else {
-            return self
-        }
-        guard cut >= 0 else {
-            return Self(negative: isNegative, digits: [], point: point - cut)
-        }
-        var kept = Array(digits[..<cut])
-        let first = digits[cut]
-        let rest = digits[(cut + 1)...].contains { $0 != 0 }
-        let odd = (kept.last ?? 0) % 2 == 1
-        var newPoint = point
-        if first > 5 || (first == 5 && (rest || odd)) {
-            var carried = true
-            for position in kept.indices.reversed() where carried {
-                if kept[position] == 9 {
-                    kept[position] = 0
-                } else {
-                    kept[position] += 1
-                    carried = false
-                }
-            }
-            if carried {
-                kept.insert(1, at: 0)
-                newPoint += 1
+    static func subtracting(_ value: Int, from digits: [UInt8]) -> [UInt8] {
+        var result = digits
+        var borrow = value
+        for position in result.indices.reversed() where borrow > 0 {
+            let current = Int(result[position]) - borrow % 10
+            borrow /= 10
+            if current < 0 {
+                result[position] = UInt8(current + 10)
+                borrow += 1
+            } else {
+                result[position] = UInt8(current)
             }
         }
-        if kept.allSatisfy({ $0 == 0 }) {
-            return Self(negative: isNegative, digits: [], point: newPoint - kept.count)
+        return result
+    }
+
+    static func adding(_ value: Int, to digits: [UInt8]) -> [UInt8] {
+        var result = digits
+        var carry = value
+        for position in result.indices.reversed() where carry > 0 {
+            let current = Int(result[position]) + carry % 10
+            carry /= 10
+            result[position] = UInt8(current % 10)
+            carry += current / 10
         }
-        return Self(negative: isNegative, digits: kept, point: newPoint)
+        while carry > 0 {
+            result.insert(UInt8(carry % 10), at: 0)
+            carry /= 10
+        }
+        return result
     }
 
     var fractionCount: Int {
