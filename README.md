@@ -1,16 +1,6 @@
 # swift-unicode-cldr
 
-Use this package when you show a date, a number or a count to a person in their own language: month and weekday names, the four date styles, decimal and grouping symbols, and the plural category a message needs. Locales are the Institute's own `Locale` from swift-locale-standard or a `BCP47.LanguageTag`; the data is Unicode CLDR.
-
-```swift
-let date = try ISO_8601.CalendarDate(year: 2026, month: 11, day: 10)
-date.formatted(.long, in: .nl)              // "10 november 2026"
-CLDR.months(.wide, in: .nl)[.march]         // "maart"
-CLDR.plural(3, in: .nl)                     // .other
-1234.5.formatted(.decimal, in: .nl)         // "1.234,5"
-```
-
-The data is generated from CLDR 49.0.0, the `cldr-49.0.0-json-full.zip` asset of the `49.0.0` release of `unicode-org/cldr-json`. Every locale whose effective coverage in `cldr-core/coverageLevels.json` is `modern` is included, 421 in all, root (`und`) among them. For each one the generator read the Gregorian months, days, eras and date formats from `cldr-dates-full`, the symbols, decimal pattern and minimum grouping digits of its default numbering system from `cldr-numbers-full`, and the digits of that system from `numberingSystems.json`. Plural rules and their samples come from `plurals.json` and `ordinals.json`; resolution uses `aliases.json`, `likelySubtags.json` and `parentLocales.json`. Equal tables are stored once and every locale points at them. The generator's Swift, formatted with the Institute's swift-format configuration, is what sits under `Sources/Unicode CLDR/Generated` with the plural samples under `Tests/Unicode CLDR Tests/Generated`.
+Use this package when you show a date, a number or a count to a person in their own language: `date.formatted(.long, in: .nl)` is "10 november 2026", `CLDR.months(.wide, in: .nl)[.march]` is "maart", `CLDR.plural(3, in: .nl)` is `.other` and `1234.5.formatted(.decimal, in: .nl)` is "1.234,5". A locale is the Institute's `Locale` from swift-locale-standard or a `BCP47.LanguageTag`. The data is generated from CLDR 49.0.0, the `cldr-49.0.0-json-full.zip` asset of the `49.0.0` release of `unicode-org/cldr-json`: for every locale whose effective coverage in `cldr-core/coverageLevels.json` is `modern`, the Gregorian months, days, eras and date formats of `cldr-dates-full`, and the symbols, decimal pattern and minimum grouping digits of the default numbering system in `cldr-numbers-full`, with that system's digits from `numberingSystems.json`; plural rules and their samples from `plurals.json` and `ordinals.json`; and the resolution tables from `aliases.json`, `likelySubtags.json` and `parentLocales.json`. Equal tables are stored once, the generated Swift is formatted with the Institute's swift-format configuration, and it sits under `Sources/Unicode CLDR/Generated`, with the plural samples under `Tests/Unicode CLDR Tests/Generated`.
 
 ## Laws
 
